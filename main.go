@@ -12,7 +12,9 @@ import (
 	"text/template"
 )
 
-const Version = "1.0.0"
+const Version = "1.0.1"
+
+var Build string
 
 //go:embed templates/*.tmpl
 var folder embed.FS
