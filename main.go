@@ -13,16 +13,47 @@ import (
 
 const Version = "1.0.0"
 
+type DecoderType int
+
+const (
+	Base64Decoder DecoderType = iota
+	AESDecoder
+	XORDecoder
+)
+
+func (d DecoderType) String() string {
+	return [...]string{"base64", "aes", "xor"}[d]
+}
+
+func StringToDecoderType(s string) DecoderType {
+	switch s {
+	case "base64":
+		return Base64Decoder
+	case "aes":
+		return AESDecoder
+	case "xor":
+		return XORDecoder
+	default:
+		return Base64Decoder
+	}
+}
+
 func main() {
 	decoder := flag.String("d", "base64Decoder.tmpl", "File containing the javascript decoder function")
 	tmpl := flag.String("t", "template.tmpl", "File containing the template for the output html")
 	loot := flag.String("l", "loot.txt", "File containing the contraband")
 	label := flag.String("n", "loot", "Name of the contraband")
 	output := flag.String("o", "index.html", "Output file")
+	decoderType := flag.String("dt", "base64", "Decoder type (only base64 supported for now)")
 	noBanner := flag.Bool("nb", false, "Disable the banner")
 	flag.Parse()
 	if !*noBanner {
 		Banner()
+	}
+	decoderTypeValue := StringToDecoderType(*decoderType)
+	if decoderTypeValue != Base64Decoder {
+		fmt.Println("Only base64 decoder is supported for now")
+		os.Exit(1)
 	}
 	contraband := Contraband{
 		Path: *loot,
