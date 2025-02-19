@@ -1,0 +1,109 @@
+package main
+
+import (
+	"bufio"
+	"encoding/base64"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"text/template"
+)
+
+func main() {
+	decoder := flag.String("d", "base64Decoder.tmpl", "File containing the javascript decoder function")
+	tmpl := flag.String("t", "template.tmpl", "File containing the template for the output html")
+	loot := flag.String("l", "loot.txt", "File containing the contraband")
+	label := flag.String("n", "loot", "Name of the contraband")
+	output := flag.String("o", "index.html", "Output file")
+	flag.Parse()
+	contraband := Contraband{
+		Path: *loot,
+	}
+	err := contraband.Read()
+	if err != nil {
+		panic(err)
+	}
+	err = contraband.Pack(*label, *decoder)
+	if err != nil {
+		panic(err)
+	}
+	err = contraband.Ship(*output, *tmpl)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Happy smuggling! Your ship is at %s\n", *output)
+}
+
+type Contraband struct {
+	Path    string
+	Data    []byte
+	Encoded string
+}
+
+type Inventory struct {
+	Name string
+	Loot string
+}
+
+type Ship struct {
+	Contraband string
+}
+
+func (c *Contraband) Read() error {
+	data, err := os.ReadFile(c.Path)
+	if err != nil {
+		return err
+	}
+	c.Data = data
+	return nil
+}
+
+func (c *Contraband) Base64() string {
+	return base64.StdEncoding.EncodeToString(c.Data)
+}
+
+func (c *Contraband) Pack(label string, tmplFile string) error {
+	inv := Inventory{
+		Name: label,
+		Loot: c.Base64(),
+	}
+	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+	if err != nil {
+		return err
+	}
+	// Create a bytes.Buffer
+	var buf strings.Builder
+
+	// Write to the buffer through io.Writer interface
+	writer := io.Writer(&buf)
+	err = tmpl.Execute(writer, inv)
+	if err != nil {
+		return err
+	}
+	c.Encoded = buf.String()
+	return nil
+}
+
+func (c *Contraband) Ship(path string, tmplFile string) error {
+	ship := Ship{
+		Contraband: c.Encoded,
+	}
+	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	buf := bufio.NewWriter(f)
+	err = tmpl.Execute(buf, ship)
+	if err != nil {
+		return err
+	}
+	buf.Flush()
+	return nil
+}
