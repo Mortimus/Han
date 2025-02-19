@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"embed"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 )
 
 const Version = "1.0.0"
+
+//go:embed templates/*.tmpl
+var folder embed.FS
 
 type DecoderType int
 
@@ -39,10 +43,10 @@ func StringToDecoderType(s string) DecoderType {
 }
 
 func main() {
-	decoder := flag.String("d", "base64Decoder.tmpl", "File containing the javascript decoder function")
-	tmpl := flag.String("t", "template.tmpl", "File containing the template for the output html")
-	loot := flag.String("l", "loot.txt", "File containing the contraband")
-	label := flag.String("n", "loot", "Name of the contraband")
+	decoder := flag.String("d", "", "File containing the javascript decoder function (Default to embedded base64Decoder.tmpl)")
+	tmpl := flag.String("t", "", "File containing the template for the output html (Default to embedded index.tmpl)")
+	loot := flag.String("l", "", "File containing the contraband")
+	label := flag.String("n", "", "Name of the contraband (Default to loot name)")
 	output := flag.String("o", "index.html", "Output file")
 	decoderType := flag.String("dt", "base64", "Decoder type (only base64 supported for now)")
 	noBanner := flag.Bool("nb", false, "Disable the banner")
@@ -50,6 +54,14 @@ func main() {
 	if !*noBanner {
 		Banner()
 	}
+	if *loot == "" {
+		fmt.Println("No loot to smuggle")
+		os.Exit(1)
+	}
+	if *label == "" {
+		*label = *loot
+	}
+
 	decoderTypeValue := StringToDecoderType(*decoderType)
 	if decoderTypeValue != Base64Decoder {
 		fmt.Println("Only base64 decoder is supported for now")
@@ -106,7 +118,21 @@ func (c *Contraband) Pack(label string, tmplFile string) error {
 		Name: label,
 		Loot: c.Base64(),
 	}
-	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+	var decoderTemplate string
+	if tmplFile == "" { // Use embedded template
+		data, err := folder.ReadFile("templates/base64Decoder.tmpl")
+		if err != nil {
+			return err
+		}
+		decoderTemplate = string(data)
+	} else {
+		data, err := os.ReadFile(tmplFile)
+		if err != nil {
+			return err
+		}
+		decoderTemplate = string(data)
+	}
+	tmpl, err := template.New("HTML").Parse(decoderTemplate)
 	if err != nil {
 		return err
 	}
@@ -127,7 +153,21 @@ func (c *Contraband) Ship(path string, tmplFile string) error {
 	ship := Ship{
 		Contraband: c.Encoded,
 	}
-	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+	var htmlTemplate string
+	if tmplFile == "" { // Use embedded template
+		data, err := folder.ReadFile("templates/index.tmpl")
+		if err != nil {
+			return err
+		}
+		htmlTemplate = string(data)
+	} else {
+		data, err := os.ReadFile(tmplFile)
+		if err != nil {
+			return err
+		}
+		htmlTemplate = string(data)
+	}
+	tmpl, err := template.New(tmplFile).Parse(htmlTemplate)
 	if err != nil {
 		return err
 	}
