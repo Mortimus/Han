@@ -12,7 +12,7 @@ import (
 	"text/template"
 )
 
-const Version = "1.0.1"
+const Version = "1.0.2"
 
 var Build string
 
@@ -52,6 +52,7 @@ func main() {
 	output := flag.String("o", "index.html", "Output file")
 	decoderType := flag.String("dt", "base64", "Decoder type (only base64 supported for now)")
 	noBanner := flag.Bool("nb", false, "Disable the banner")
+	ver := flag.Bool("v", false, "Print version")
 	flag.Parse()
 	if !*noBanner {
 		Banner()
@@ -62,6 +63,10 @@ func main() {
 	}
 	if *label == "" {
 		*label = *loot
+	}
+	if *ver {
+		version()
+		os.Exit(0)
 	}
 
 	decoderTypeValue := StringToDecoderType(*decoderType)
@@ -233,6 +238,10 @@ func Banner() {
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⡼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠀⠀⠀⠀⣿⠀⠸⠁⢸
 	`)
 	fmt.Println("------------------------------------------------------------")
-	fmt.Printf("Han v%s by Mortimus\n", Version)
+	version()
 	fmt.Println("------------------------------------------------------------")
+}
+
+func version() {
+	fmt.Printf("Han v%s by Mortimus\n", Version)
 }
