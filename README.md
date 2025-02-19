@@ -64,4 +64,6 @@ Han -d base64Decoder.tmpl -l malicious.exe -n notmalicious.exe -o index.html -t 
         Output file (default "index.html")
   -t string
         File containing the template for the output html (default "template.tmpl")
+  -v
+        Print version
 ```
