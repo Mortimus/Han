@@ -8,11 +8,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"text/template"
 )
 
-const Version = "1.0.2"
+var Commit = func() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+	return ""
+}()
 
 var Build string
 
@@ -243,5 +253,5 @@ func Banner() {
 }
 
 func version() {
-	fmt.Printf("Han v%s by Mortimus\n", Version)
+	fmt.Printf("Han build %s by Mortimus\n", Commit)
 }
